@@ -1,10 +1,13 @@
 package com.example.grabcut;
 
+import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -13,6 +16,9 @@ import android.widget.ImageView;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public class GCActivity extends AppCompatActivity {
     static {
@@ -33,8 +39,8 @@ public class GCActivity extends AppCompatActivity {
         setContentView(R.layout.activity_gc);
         imageView = findViewById(R.id.image_view);
 
-        Bitmap b = BitmapFactory.decodeResource(getResources(),R.drawable.timg);
-        bitmap = Bitmap.createScaledBitmap(b,b.getWidth()/3,b.getHeight()/3,false);
+
+        bitmap = decodeResource(getResources(),R.drawable.timg);
         bm = Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(), Bitmap.Config.ARGB_8888);
 
 
@@ -91,8 +97,37 @@ public class GCActivity extends AppCompatActivity {
             }
 
         });
-
     }
+    //BitmapFactory.decodeResource()得到的Bitmap长宽变大,修改一下得到原宽高
+    public Bitmap decodeResource(Resources res, int id) {
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        Bitmap bm = null;
+        InputStream is = null;
+        try {
+            final TypedValue value = new TypedValue();
+            is = res.openRawResource(id, value);
+            opts.inTargetDensity = value.density;
+            opts.inScaled = false;
+            bm = BitmapFactory.decodeResourceStream(res, value, is, null, opts);
+        } catch (Exception e) {
+            /*  do nothing.
+                If the exception happened on open, bm will be null.
+                If it happened on close, bm is still valid.
+            */
+        } finally {
+            try {
+                if (is != null) is.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+
+        if (bm == null && opts.inBitmap != null) {
+            throw new IllegalArgumentException("Problem decoding into existing bitmap");
+        }
+        return bm;
+    }
+
 
     public void onFlags(View view){
         Button button = (Button) view;
